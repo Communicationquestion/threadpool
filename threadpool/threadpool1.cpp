@@ -15,7 +15,7 @@ public:
 
 	int foo() const {
 		try {
-			std::this_thread::sleep_for(std::chrono::seconds(10));
+			std::this_thread::sleep_for(std::chrono::seconds(5));
 			std::lock_guard<std::mutex> lock(cout_mutex);
 			std::cout << url << " " << a << std::endl;
 
@@ -40,22 +40,23 @@ public:
 		for(int i = 0; i < n; i++) {
 			threads.emplace_back([&] {
 
-				std::function<int()> f;
 				Task* s = NULL;
-				Task a("s",3);
+				Task a("s", 3);
 				while(true) {
 					{
 						if(!qtasks.empty()) {
 							std::lock_guard<std::mutex> lock(qmutex);
-							a = qtasks.front();
-							s = &a;
-							qtasks.pop();
-							isnotask = 1;
-						}
-						if(!qtasks.empty()) {
-							if(s != NULL) {
-								s->foo();
+							if(!qtasks.empty()) {
+								s = NULL;
+								a = qtasks.front();
+								s = &a;
+								qtasks.pop();
+								isnotask = 1;
 							}
+						}
+						if(s != NULL) {
+							s->foo();
+							s=NULL;
 						}
 						std::lock_guard<std::mutex> lock(over);
 						if(qtasks.empty()) {
@@ -63,15 +64,15 @@ public:
 								if(s != NULL) {
 									s->foo();
 									isnotask = 0;
+									s = NULL;
 								}
 							}
-
 						}
+
 					}
 				}
 			});
 		}
-
 	}
 	void join() {
 		for(std::thread& t : threads) {
@@ -101,6 +102,7 @@ int main() {
 	//	Task task(s, b);
 	//	tp.push_task(task);
 	//}
+
 	int j = 0;
 	while(true) {
 		std::string s = strs[j];
@@ -110,7 +112,7 @@ int main() {
 		if(j == 25) {
 			break;
 		}
-		if(j == 13){
+		if(j == 13) {
 			std::this_thread::sleep_for(std::chrono::seconds(10));
 		}
 		j++;
