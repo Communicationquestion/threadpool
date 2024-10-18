@@ -15,7 +15,10 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="threadpool.cpp">
+    <ClCompile Include="threadpool1.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="threadpool2.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>

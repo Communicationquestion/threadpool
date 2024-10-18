@@ -8,6 +8,7 @@
 #include <vector>
 std::mutex cout_mutex;
 std::mutex qmutex;
+std::mutex over;
 class Task {
 public:
 	Task(std::string url, int a) : url(url), a(a) {}
@@ -40,33 +41,39 @@ public:
 			threads.emplace_back([&] {
 
 				std::function<int()> f;
-				Task s("s", 3);
+				Task* s = NULL;
+				Task a("s",3);
 				while(true) {
 					{
 						if(!qtasks.empty()) {
 							std::lock_guard<std::mutex> lock(qmutex);
-							s = qtasks.front();
+							a = qtasks.front();
+							s = &a;
 							qtasks.pop();
-						
+							isnotask = 1;
 						}
 						if(!qtasks.empty()) {
-							s.foo();
-				
-						}
-						if (qtasks.empty())
-						{
-							if (isnotask==0)
-							{
-								return 0;
+							if(s != NULL) {
+								s->foo();
 							}
-							s.foo();
-							isnotask = 0;
-							return 0;
+						}
+						std::lock_guard<std::mutex> lock(over);
+						if(qtasks.empty()) {
+							if(isnotask == 1) {
+								if(s != NULL) {
+									s->foo();
+									isnotask = 0;
+								}
+							}
+
 						}
 					}
 				}
 			});
 		}
+
+	}
+	void join() {
 		for(std::thread& t : threads) {
 			if(t.joinable()) {
 				t.join();
@@ -85,15 +92,31 @@ int main() {
 	std::string strs[100] = {"a", "b", "c", "d", "e", "f", "g", "h", "i",
 							 "j", "k", "l", "m", "n", "o", "p", "q", "r",
 							 "s", "t", "u", "v", "w", "x", "y", "z"};
-	threadpool tp(12);
-	for(int i = 0; i < 26; i++) {
-		std::string s = strs[i];
-		int b = i;
-		Task task(s, b);
-		tp.push_task(task);
-	}
+	threadpool tp(26);
 	tp.start();
 
+	//for(int i = 0; i < 26; i++) {
+	//	std::string s = strs[i];
+	//	int b = i;
+	//	Task task(s, b);
+	//	tp.push_task(task);
+	//}
+	int j = 0;
+	while(true) {
+		std::string s = strs[j];
+		int b = j;
+		Task task(s, b);
+		tp.push_task(task);
+		if(j == 25) {
+			break;
+		}
+		if(j == 13){
+			std::this_thread::sleep_for(std::chrono::seconds(10));
+		}
+		j++;
+	}
+
+	tp.join();
 
 	return 0;
 }
