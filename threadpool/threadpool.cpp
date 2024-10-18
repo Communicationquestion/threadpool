@@ -37,20 +37,34 @@ public:
 	};
 	void start() {
 		for(int i = 0; i < n; i++) {
+			threads.emplace_back([&] {
 
-			Task t1 = qtasks.front();
-			qtasks.pop();
-
-			threads.emplace_back([=, &i] {
+				std::function<int()> f;
+				Task s("s", 3);
 				while(true) {
-
-					if(!qtasks.empty()) {
-
-					} else {
-						  
+					{
+						if(!qtasks.empty()) {
+							std::lock_guard<std::mutex> lock(qmutex);
+							s = qtasks.front();
+							qtasks.pop();
+						
+						}
+						if(!qtasks.empty()) {
+							s.foo();
+				
+						}
+						if (qtasks.empty())
+						{
+							if (isnotask==0)
+							{
+								return 0;
+							}
+							s.foo();
+							isnotask = 0;
+							return 0;
+						}
 					}
 				}
-				//t1.foo();
 			});
 		}
 		for(std::thread& t : threads) {
@@ -60,6 +74,7 @@ public:
 		}
 	}
 private:
+	bool isnotask = 1;
 	int n;
 	std::queue<Task> qtasks;
 	std::vector<std::thread> threads;
@@ -70,7 +85,7 @@ int main() {
 	std::string strs[100] = {"a", "b", "c", "d", "e", "f", "g", "h", "i",
 							 "j", "k", "l", "m", "n", "o", "p", "q", "r",
 							 "s", "t", "u", "v", "w", "x", "y", "z"};
-	threadpool tp(26);
+	threadpool tp(12);
 	for(int i = 0; i < 26; i++) {
 		std::string s = strs[i];
 		int b = i;
@@ -78,5 +93,7 @@ int main() {
 		tp.push_task(task);
 	}
 	tp.start();
+
+
 	return 0;
 }
